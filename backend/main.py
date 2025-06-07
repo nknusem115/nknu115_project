@@ -14,12 +14,16 @@ from .database import engine, get_db
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="新聞檢測 API (with Real Database)",
     version="2.0.0",
 )
 
 # --- CORS Middleware ---
-origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+origins = [
+         
+    "http://localhost:5173",    # Vite 開發服務器 (您目前使用的)
+    "http://127.0.0.1:5173",
+    
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
