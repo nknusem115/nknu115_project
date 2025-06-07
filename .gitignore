@@ -1,0 +1,8 @@
+*.bin
+*.zip
+Model_API/
+__pycache__/
+*.pyc
+.env
+node_modules/
+.DS_Store
