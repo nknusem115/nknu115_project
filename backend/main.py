@@ -7,8 +7,8 @@ import requests
 from jose import JWTError, jwt
 
 # Import our new modules
-from . import crud, models, schemas, security
-from .database import engine, get_db
+import crud, models, schemas, security
+from database import engine, get_db
 
 # This command creates the database file and the 'users' table if they don't exist
 models.Base.metadata.create_all(bind=engine)

@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 import os
-from . import schemas
+import  schemas 
 
 # Load environment variables from .env file
 load_dotenv()
