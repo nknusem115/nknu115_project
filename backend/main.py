@@ -50,7 +50,7 @@ app.add_middleware(
 
 # --- 使用者認證與依賴 ---
 # (這部分與之前帶有資料庫的版本完全相同)
-oauth2_scheme = security.OAuth2PasswordBearer(tokenUrl="api/users/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/users/login")
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
