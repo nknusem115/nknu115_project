@@ -4,7 +4,7 @@
 import requests
 import time
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm ,OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
