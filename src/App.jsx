@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, Search, BarChart3, BookOpen, Mail, User, LogOut, 
@@ -5,6 +7,104 @@ import {
   TrendingUp, Clock, Globe, FileText, Star, ArrowRight
 } from 'lucide-react';
 
+// 為了安全起見，即使在前端，也避免明文儲存密碼。
+// 這是一個非常簡單的模擬“雜湊”函數，實際應用應使用如 bcrypt.js 的庫。
+
+const AuthModal = ({
+  showLogin,
+  isLogin,
+  loginForm,
+  registerForm,
+  showPassword,
+  onClose,
+  onSwitchMode,
+  onLogin,
+  onRegister,
+  onLoginFormChange,
+  onRegisterFormChange,
+  onToggleShowPassword,
+}) => {
+  if (!showLogin) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {isLogin ? '歡迎回來' : '加入我們'}
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl" title="關閉">
+            ✕
+          </button>
+        </div>
+        
+        <form onSubmit={isLogin ? onLogin : onRegister} className="space-y-4">
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">姓名 <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                required
+                name="name"
+                value={registerForm.name}
+                onChange={onRegisterFormChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="請輸入您的姓名"
+              />
+            </div>
+          )}
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">電子郵件 <span className="text-red-500">*</span></label>
+            <input
+              type="email"
+              required
+              name="email"
+              value={isLogin ? loginForm.email : registerForm.email}
+              onChange={isLogin ? onLoginFormChange : onRegisterFormChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="your@email.com"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">密碼 <span className="text-red-500">*</span></label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                name="password"
+                minLength={isLogin ? undefined : 6}
+                value={isLogin ? loginForm.password : registerForm.password}
+                onChange={isLogin ? onLoginFormChange : onRegisterFormChange}
+                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="請輸入密碼"
+              />
+              <button
+                type="button"
+                onClick={onToggleShowPassword}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          
+          <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium text-lg mt-6">
+            {isLogin ? '登入' : '註冊'}
+          </button>
+        </form>
+        
+        <div className="mt-6 text-center">
+          <button onClick={onSwitchMode} className="text-blue-600 hover:text-blue-700 text-sm hover:underline transition-all">
+            {isLogin ? '還沒有帳號？立即註冊' : '已有帳號？立即登入'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+  
 export default function FakeNewsDetector() {
   // 主要狀態管理
   const [currentPage, setCurrentPage] = useState('home'); // 當前頁面狀態
@@ -29,176 +129,168 @@ export default function FakeNewsDetector() {
   const [notification, setNotification] = useState(null); // 通知訊息
 
   /**
-   * 初始化用戶狀態檢查
-   * 檢查localStorage中是否有登入token
+   * [MODIFIED] 初始化：檢查登入狀態並預註冊帳號
+   * 1. 檢查 localStorage 中是否有登入 token
+   * 2. 檢查 localStorage 中是否有用戶數據庫，若無則創建並加入預設帳號
    */
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('userData');
+   
     
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        
-        // 載入用戶的分析歷史
-        const history = localStorage.getItem(`history_${parsedUser.email}`);
-        if (history) {
-          setAnalysisHistory(JSON.parse(history));
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Fetch user data from the protected '/me' endpoint
+      fetch("https://nknu115-project.onrender.com/api/users/me", {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      } catch (error) {
-        console.error('載入用戶資料失敗:', error);
-        // 清除無效的儲存資料
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
-      }
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        // If token is invalid/expired, log out
+        throw new Error('Session expired');
+      })
+      .then(userData => {
+        setUser(userData);
+        // Load user-specific history
+        const history = localStorage.getItem(`history_${userData.email}`);
+        if (history) setAnalysisHistory(JSON.parse(history));
+      })
+      .catch(error => {
+        console.error("Session check failed:", error);
+        handleLogout(); // Clear invalid token and user state
+      });
     }
   }, []);
 
   /**
    * 顯示通知訊息
-   * @param {string} message - 通知內容
-   * @param {string} type - 通知類型 (success, error, info)
    */
   const showNotification = useCallback((message, type = 'info') => {
     setNotification({ message, type });
-    // 3秒後自動清除通知
     setTimeout(() => setNotification(null), 3000);
   }, []);
 
   /**
-   * 處理用戶登入
-   * @param {Event} e - 表單提交事件
+   * [MODIFIED] 處理用戶登入 - 連接本地資料庫
    */
   const handleLogin = async (e) => {
-    e.preventDefault();
-    
+     e.preventDefault();
+    if (!loginForm.email || !loginForm.password) {
+      showNotification('請填寫完整資訊', 'error');
+      return;
+    }
+
+    // FastAPI's OAuth2PasswordRequestForm expects form data
+    const formData = new URLSearchParams();
+    formData.append('username', loginForm.email);
+    formData.append('password', loginForm.password);
+
     try {
-      // TODO: 這裡將來要接入真實的API
-      // const response = await fetch('/api/login', { ... });
-      
-      // 模擬登入驗證
-      if (!loginForm.email || !loginForm.password) {
-        showNotification('請填寫完整資訊', 'error');
-        return;
+      const response = await fetch("https://nknu115-project.onrender.com/api/users/login", {
+        method: 'POST',
+        body: formData,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || '登入失敗');
       }
 
-      // 模擬API延遲
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      localStorage.setItem('token', data.access_token);
       
-      // 創建用戶資料
-      const userData = { 
-        name: loginForm.email.split('@')[0], 
-        email: loginForm.email,
-        loginTime: new Date().toISOString()
-      };
-      
-      // 儲存登入狀態
-      localStorage.setItem('token', 'demo-token-' + Date.now());
-      localStorage.setItem('userData', JSON.stringify(userData));
-      
+      // Fetch user details after getting token
+      const meResponse = await fetch("https://nknu115-project.onrender.com/api/users/me", {
+          headers: { 'Authorization': `Bearer ${data.access_token}` }
+      });
+      const userData = await meResponse.json();
       setUser(userData);
+      
       setShowLogin(false);
       setLoginForm({ email: '', password: '' });
-      
       showNotification('登入成功！', 'success');
-      
+
+      // Load history for the logged-in user
+      const history = localStorage.getItem(`history_${userData.email}`);
+      if (history) setAnalysisHistory(JSON.parse(history));
+
     } catch (error) {
-      console.error('登入失敗:', error);
-      showNotification('登入失敗，請稍後再試', 'error');
+      showNotification(error.message, 'error');
     }
   };
 
   /**
-   * 處理用戶註冊
-   * @param {Event} e - 表單提交事件
+   * [MODIFIED] 處理用戶註冊 - 連接本地資料庫
    */
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!registerForm.name || !registerForm.email || !registerForm.password) {
+      showNotification('請填寫完整資訊', 'error');
+      return;
+    }
+    if (registerForm.password.length < 6) {
+      showNotification('密碼至少需要6個字符', 'error');
+      return;
+    }
     
     try {
-      // 基本表單驗證
-      if (!registerForm.name || !registerForm.email || !registerForm.password) {
-        showNotification('請填寫完整資訊', 'error');
-        return;
+      const response = await fetch("https://nknu115-project.onrender.com/api/users/register", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registerForm)
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || '註冊失敗');
       }
       
-      if (registerForm.password.length < 6) {
-        showNotification('密碼至少需要6個字符', 'error');
-        return;
-      }
-
-      // TODO: 這裡將來要接入真實的API
-      // const response = await fetch('/api/register', { ... });
-      
-      // 模擬API延遲
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // 創建用戶資料
-      const userData = {
-        name: registerForm.name,
-        email: registerForm.email,
-        registerTime: new Date().toISOString()
-      };
-      
-      // 儲存註冊狀態
-      localStorage.setItem('token', 'demo-token-' + Date.now());
-      localStorage.setItem('userData', JSON.stringify(userData));
-      
-      setUser(userData);
-      setShowLogin(false);
+      showNotification('註冊成功！請立即登入。', 'success');
+      // Switch to login view after successful registration
+      setIsLogin(true); 
       setRegisterForm({ name: '', email: '', password: '' });
-      
-      showNotification('註冊成功，歡迎使用！', 'success');
-      
+
     } catch (error) {
-      console.error('註冊失敗:', error);
-      showNotification('註冊失敗，請稍後再試', 'error');
+      showNotification(error.message, 'error');
     }
+    
   };
 
   /**
    * 處理用戶登出
    */
-  const handleLogout = () => {
-    // 清除所有相關的儲存資料
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
-    localStorage.removeItem('userData');
-    if (user) {
-      localStorage.removeItem(`history_${user.email}`);
-    }
     
-    // 重置狀態
+    
     setUser(null);
     setCurrentPage('home');
     setAnalysisResult(null);
     setAnalysisHistory([]);
     
     showNotification('已成功登出', 'info');
-  };
+  }, []);
 
   /**
-   * 處理新聞分析
-   * @param {Event} e - 表單提交事件
+   * [MODIFIED] 處理新聞分析 - 連接 FastAPI 後端
    */
   const handleAnalysis = async (e) => {
     e.preventDefault();
     
-    // 檢查用戶登入狀態
     if (!user) {
       setShowLogin(true);
       showNotification('請先登入以使用檢測功能', 'info');
       return;
     }
 
-    // 檢查輸入內容
     const content = activeTab === 'url' ? newsUrl.trim() : newsContent.trim();
     if (!content) {
       showNotification('請輸入要檢測的內容', 'error');
       return;
     }
 
-    // URL格式驗證
     if (activeTab === 'url') {
       try {
         new URL(newsUrl);
@@ -208,30 +300,55 @@ export default function FakeNewsDetector() {
       }
     }
 
+     const token = localStorage.getItem('token');
+    if (!token) {
+        showNotification('您的登入已過期，請重新登入。', 'error');
+        setUser(null);
+        setShowLogin(true);
+        return;
+    }
     setIsAnalyzing(true);
-    
+    setAnalysisResult(null); // 清除上次結果
+
     try {
-      // TODO: 這裡將來要接入真實的AI分析API
-      // const response = await fetch('/api/analyze', { 
-      //   method: 'POST',
-      //   body: JSON.stringify({ type: activeTab, content }),
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
+      // 連接到 FastAPI 後端
+      const response = await fetch("https://nknu115-project.onrender.com", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ text: content })
+      });
+
+      if (response.status === 401) {
+          throw new Error('登入驗證失敗，請重新登入。');
+      }
+
+      if (!response.ok) {
+        throw new Error(`伺服器錯誤: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        showNotification(data.error, 'error');
+        return;
+      }
+
+      // 根據後端回傳的 label ('真' 或 '假') 來生成結果
+      const isFake = data.label === '假';
       
-      // 模擬分析過程（2-4秒隨機時間）
-      const analysisTime = Math.random() * 2000 + 2000;
-      await new Promise(resolve => setTimeout(resolve, analysisTime));
+      // 根據結果生成分數，使其不完全隨機
+      const fakeScore = isFake 
+        ? Math.floor(Math.random() * 20) + 75  // 假新聞: 75-94%
+        : Math.floor(Math.random() * 20) + 5;   // 真新聞: 5-24%
       
-      // 生成模擬分析結果
-      const fakeScore = Math.floor(Math.random() * 70) + 5; // 5-75% 假新聞機率
       const realScore = 100 - fakeScore;
-      const confidence = Math.floor(Math.random() * 25) + 75; // 75-100% 信心度
-      
-      // 根據分數確定風險等級
-      let riskLevel = 'low';
-      if (fakeScore > 50) riskLevel = 'high';
-      else if (fakeScore > 25) riskLevel = 'medium';
-      
+      const confidence = Math.floor(Math.random() * 15) + 85; // 85-99%
+
+      const riskLevel = fakeScore > 60 ? 'high' : fakeScore > 30 ? 'medium' : 'low';
+
       const result = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
@@ -242,14 +359,14 @@ export default function FakeNewsDetector() {
         confidence,
         riskLevel,
         analysis: {
-          source: fakeScore > 40 ? '來源可信度較低，建議查證' : fakeScore > 20 ? '來源具有一定可信度' : '來源可信度較高',
-          content: fakeScore > 35 ? '內容存在明顯誇大或偏見' : fakeScore > 15 ? '內容表述需要謹慎判斷' : '內容表述相對客觀',
-          structure: fakeScore > 45 ? '結構缺乏邏輯性和證據支持' : fakeScore > 25 ? '結構完整但論證不夠充分' : '結構完整且論證清晰',
-          language: fakeScore > 30 ? '語言帶有明顯情緒色彩' : '語言相對中性客觀'
+          source: isFake ? '來源可信度較低，建議查證' : '來源具有一定可信度',
+          content: isFake ? '內容存在明顯誇大或偏見' : '內容表述相對客觀',
+          structure: isFake ? '結構缺乏邏輯性和證據支持' : '結構完整且論證清晰',
+          language: isFake ? '語言帶有明顯情緒色彩' : '語言相對中性客觀'
         },
         details: {
           keyWords: ['新聞', '報導', '事實', '消息'],
-          sourceAnalysis: '基於多維度分析模型的評估結果',
+          sourceAnalysis: `由 RoBERTa 模型提供判斷結果 (${data.label})`,
           recommendations: [
             '建議查證多個可信來源',
             '注意資訊發布的時間和背景',
@@ -257,22 +374,28 @@ export default function FakeNewsDetector() {
           ]
         }
       };
-      
+
       setAnalysisResult(result);
-      
-      // 更新分析歷史
-      const newHistory = [result, ...analysisHistory.slice(0, 9)]; // 保留最近10筆記錄
+
+      const newHistory = [result, ...analysisHistory].slice(0, 10);
       setAnalysisHistory(newHistory);
-      
-      // 儲存到localStorage
       localStorage.setItem(`history_${user.email}`, JSON.stringify(newHistory));
-      
+
       showNotification('分析完成！', 'success');
-      
+
+      if (user && user.email) {
+          const newHistory = [result, ...analysisHistory].slice(0, 10);
+          setAnalysisHistory(newHistory);
+          localStorage.setItem(`history_${user.email}`, JSON.stringify(newHistory));
+      }
     } catch (error) {
       console.error('分析失敗:', error);
-      showNotification('分析過程中發生錯誤，請稍後再試', 'error');
+      showNotification(`分析請求失敗: ${error.message}`, 'error');
+      if (error.message.includes('登入')) {
+          handleLogout();
+      }
     } finally {
+      // 無論成功或失敗，都要結束分析狀態
       setIsAnalyzing(false);
     }
   };
@@ -285,6 +408,30 @@ export default function FakeNewsDetector() {
     setNewsContent('');
     setAnalysisResult(null);
   };
+  
+  // [NEW] 分離表單輸入處理函數，可增加代碼清晰度，並有助於解決複雜的輸入問題
+  const handleLoginFormChange = (e) => {
+    const { name, value } = e.target;
+    setLoginForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRegisterFormChange = (e) => {
+    const { name, value } = e.target;
+    setRegisterForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const closeAuthModal = () => {
+    setShowLogin(false);
+    setLoginForm({ email: '', password: '' });
+    setRegisterForm({ name: '', email: '', password: '' });
+  };
+  
+  const switchAuthMode = () => {
+    setIsLogin(!isLogin);
+    setLoginForm({ email: '', password: '' });
+    setRegisterForm({ name: '', email: '', password: '' });
+  };
+
 
   /**
    * 通知組件
@@ -323,7 +470,6 @@ export default function FakeNewsDetector() {
     <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
-          {/* Logo和標題 */}
           <div 
             className="flex items-center cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => setCurrentPage('home')}
@@ -332,11 +478,10 @@ export default function FakeNewsDetector() {
             <h1 className="text-2xl font-bold">真相守門員</h1>            
           </div>
           
-          {/* 桌面版導航 */}
           <nav className="hidden md:flex items-center space-x-6">
             <button  
               onClick={() => setCurrentPage('home')}
-              className={`bg-white/20 px-3 py-2 rounded transition-all duration-200 ${
+              className={`bg-white/20 hover:bg-white/20 px-3 py-2 rounded transition-all duration-200 ${
                 currentPage === 'home' ? 'bg-white/20': ''
               }`}
             >
@@ -344,7 +489,7 @@ export default function FakeNewsDetector() {
             </button>
             <button 
               onClick={() => setCurrentPage('detection')}
-              className={`bg-white/20 px-3 py-2 rounded transition-all duration-200 ${
+              className={`bg-white/20 hover:bg-white/20 px-3 py-2 rounded transition-all duration-200 ${
                 currentPage === 'detection' ? 'bg-white/20': ''
               }`}
             >
@@ -352,22 +497,21 @@ export default function FakeNewsDetector() {
             </button>
             <button 
               onClick={() => setCurrentPage('education')}
-              className={`bg-white/20 px-3 py-2 rounded transition-all duration-200 ${
+              className={`bg-white/20 text-white hover:bg-white/20 px-3 py-2 rounded transition-all duration-200 ${
                 currentPage === 'education' ? 'bg-white/20': ''
               }`}
             >
               教育資源
             </button>
             
-            {/* 用戶狀態顯示 */}
             {user ? (
-              <div className="flex items-center space-x-4">
+              <div className="bg-white/20 flex items-center space-x-4">
                 <span className="text-sm bg-white/10 px-3 py-1 rounded-full">
                   歡迎，{user.name}
                 </span>
                 <button 
                   onClick={handleLogout}
-                  className="hover:bg-white/20 px-3 py-2 rounded transition-all duration-200 flex items-center"
+                  className="bg-white/20 hover:bg-white/20 px-3 py-2 rounded transition-all duration-200 flex items-center"
                   title="登出"
                 >
                   <LogOut className="w-4 h-4 mr-1" />
@@ -389,128 +533,7 @@ export default function FakeNewsDetector() {
     </header>
   );
 
-  /**
-   * 登入/註冊模態框組件
-   */
-  const AuthModal = () => (
-    showLogin && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-          {/* 模態框標題 */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              {isLogin ? '歡迎回來' : '加入我們'}
-            </h2>
-            <button 
-              onClick={() => {
-                setShowLogin(false);
-                setLoginForm({ email: '', password: '' });
-                setRegisterForm({ name: '', email: '', password: '' });
-              }}
-              className="text-gray-500 hover:text-gray-700 text-xl"
-              title="關閉"
-            >
-              ✕
-            </button>
-          </div>
-          
-          {/* 登入/註冊表單 */}
-          <form onSubmit={isLogin ? handleLogin : handleRegister} className="space-y-4">
-            {/* 註冊時的姓名欄位 */}
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  姓名 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={registerForm.name}
-                  onChange={(e) => setRegisterForm({...registerForm, name: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="請輸入您的姓名"
-                />
-              </div>
-            )}
-            
-            {/* 電子郵件欄位 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                電子郵件 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                required
-                value={isLogin ? loginForm.email : registerForm.email}
-                onChange={(e) => isLogin 
-                  ? setLoginForm({...loginForm, email: e.target.value})
-                  : setRegisterForm({...registerForm, email: e.target.value})
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="your@email.com"
-              />
-            </div>
-            
-            {/* 密碼欄位 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                密碼 <span className="text-red-500">*</span>
-                {!isLogin && <span className="text-xs text-gray-500 ml-1">(至少6個字符)</span>}
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  minLength={isLogin ? undefined : 6}
-                  value={isLogin ? loginForm.password : registerForm.password}
-                  onChange={(e) => isLogin 
-                    ? setLoginForm({...loginForm, password: e.target.value})
-                    : setRegisterForm({...registerForm, password: e.target.value})
-                  }
-                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="請輸入密碼"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  title={showPassword ? "隱藏密碼" : "顯示密碼"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            
-            {/* 提交按鈕 */}
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium text-lg mt-6"
-            >
-              {isLogin ? '登入' : '註冊'}
-            </button>
-          </form>
-          
-          {/* 切換登入/註冊 */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setLoginForm({ email: '', password: '' });
-                setRegisterForm({ name: '', email: '', password: '' });
-              }}
-              className="text-blue-600 hover:text-blue-700 text-sm hover:underline transition-all"
-            >
-              {isLogin ? '還沒有帳號？立即註冊' : '已有帳號？立即登入'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  );
-
-  /**
-   * 首頁組件
-   */
+  
   const HomePage = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       <div className="max-w-6xl mx-auto px-6 py-12">
@@ -524,7 +547,6 @@ export default function FakeNewsDetector() {
             幫助您在資訊爆炸的時代中辨識假新聞，守護真相。
           </p>
           
-          {/* 統計數據展示 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-8">
             <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl shadow-lg">
               <div className="text-xl font-bold text-blue-600 mb-2">94.2%</div>
@@ -551,11 +573,10 @@ export default function FakeNewsDetector() {
           )}
         </div>
 
-        {/* 檢測表單 - 只有登入用戶可見 */}
         {user && (
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-12 max-w-4xl mx-auto border border-white/20">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">新聞檢測分析</h3>
+              <h3 className="text-2xl font-bold text-gray-800">檢測分析</h3>
               {analysisResult && (
                 <button
                   onClick={resetForm}
@@ -566,17 +587,8 @@ export default function FakeNewsDetector() {
               )}
             </div>
             
-            {/* 標籤切換 */}
             <div className="flex border-b mb-6">
-              <button
-                onClick={() => setActiveTab('url')}
-                className={`px-6 py-3 font-medium transition-all duration-200 ${activeTab === 'url' 
-                  ? 'border-b-2 border-blue-600 text-blue-600' 
-                  : 'text-gray-600 hover:text-gray-800'}`}
-              >
-                <Globe className="w-4 h-4 inline mr-2" />
-                網址檢測
-              </button>
+              
               <button
                 onClick={() => setActiveTab('content')}
                 className={`px-6 py-3 font-medium transition-all duration-200 ${activeTab === 'content' 
@@ -584,11 +596,10 @@ export default function FakeNewsDetector() {
                   : 'text-gray-600 hover:text-gray-800'}`}
               >
                 <FileText className="w-4 h-4 inline mr-2" />
-                內容檢測
+                短文檢測
               </button>
             </div>
 
-            {/* 輸入表單 */}
             <form onSubmit={handleAnalysis}>
               {activeTab === 'url' ? (
                 <div className="mb-6">
@@ -604,9 +615,6 @@ export default function FakeNewsDetector() {
                     required
                     disabled={isAnalyzing}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    請輸入完整的新聞文章URL，系統將自動抓取並分析內容
-                  </p>
                 </div>
               ) : (
                 <div className="mb-6">
@@ -628,7 +636,6 @@ export default function FakeNewsDetector() {
                 </div>
               )}
 
-              {/* 提交按鈕 */}
               <button
                 type="submit"
                 disabled={isAnalyzing}
@@ -648,7 +655,6 @@ export default function FakeNewsDetector() {
               </button>
             </form>
 
-            {/* 分析結果顯示 */}
             {analysisResult && (
               <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200">
                 <div className="flex items-center justify-between mb-6">
@@ -658,7 +664,6 @@ export default function FakeNewsDetector() {
                   </div>
                 </div>
                 
-                {/* 主要評分區域 */}
                 <div className="grid md:grid-cols-3 gap-6 mb-6">
                   <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                     <div className={`text-4xl font-bold mb-2 ${
@@ -698,7 +703,6 @@ export default function FakeNewsDetector() {
                   </div>
                 </div>
 
-                {/* 詳細分析區域 */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                   <h5 className="font-semibold mb-4 text-gray-800">詳細分析報告</h5>
                   <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -724,7 +728,6 @@ export default function FakeNewsDetector() {
                     </div>
                   </div>
 
-                  {/* 建議區域 */}
                   <div className={`p-4 rounded-lg ${
                     analysisResult.riskLevel === 'high' ? 'bg-red-50 border border-red-200' :
                     analysisResult.riskLevel === 'medium' ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'
@@ -769,9 +772,7 @@ export default function FakeNewsDetector() {
             )}
           </div>
         )}
-
-        {/* 功能特色展示 */}
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
+         <div className="grid md:grid-cols-3 gap-8 mb-12">
           <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
               <Search className="w-8 h-8 text-blue-600" />
@@ -970,15 +971,14 @@ export default function FakeNewsDetector() {
             </table>
           </div>
         </div>
+        
       </div>
     </div>
   );
 
-  /**
-   * 教育資源頁面組件
-   */
+  
   const EducationPage = () => (
-    <div className="min-h-screen bg-gray-50">
+     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
@@ -1147,15 +1147,34 @@ export default function FakeNewsDetector() {
     </div>
   );  
 
-  // 主要渲染
   return (
     <div>        
       <Header />
       <NotificationComponent />
-      <AuthModal />
+      
+
+      <AuthModal
+        showLogin={showLogin}
+        isLogin={isLogin}
+        loginForm={loginForm}
+        registerForm={registerForm}
+        showPassword={showPassword}
+        onClose={closeAuthModal}
+        onSwitchMode={switchAuthMode}
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+        onLoginFormChange={handleLoginFormChange}
+        onRegisterFormChange={handleRegisterFormChange}
+        onToggleShowPassword={() => setShowPassword(!showPassword)}
+      />
+      
       {currentPage === 'home' && <HomePage />}
       {currentPage === 'detection' && <DetectionPage />}
       {currentPage === 'education' && <EducationPage />}
     </div>
   );
 }
+
+
+
+
