@@ -1,5 +1,5 @@
 
-
+// 導入 React 相關的 hooks 和 lucide-react 圖標庫，用於 UI 顯示
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, Search, BarChart3, BookOpen, Mail, User, LogOut, 
@@ -7,23 +7,24 @@ import {
   TrendingUp, Clock, Globe, FileText, Star, ArrowRight
 } from 'lucide-react';
 
-// 為了安全起見，即使在前端，也避免明文儲存密碼。
-// 這是一個非常簡單的模擬“雜湊”函數，實際應用應使用如 bcrypt.js 的庫。
+
+//要將AuthModal 要將AuthModal 從function FakeNewsDetector()獨立
+//不然會出現密碼帳號不能存取輸入狀態 只能一次輸入一個字符
 
 const AuthModal = ({
-  showLogin,
-  isLogin,
+  showLogin,// 控制模態框是否顯示
+  isLogin,// 布林值，true 為登入模式，false 為註冊模式
   loginForm,
   registerForm,
   showPassword,
-  onClose,
-  onSwitchMode,
-  onLogin,
-  onRegister,
+  onClose,// 關閉模態框的回調函數
+  onSwitchMode,// 切換登入/註冊模式的回調函數
+  onLogin,// 提交登入表單的回調函數
+  onRegister,// 提交註冊表單的回調函數
   onLoginFormChange,
   onRegisterFormChange,
-  onToggleShowPassword,
-}) => {
+  onToggleShowPassword,// 切換密碼可見性的回調函數
+}) => {// 如果 showLogin 為 false，則不渲染任何內容
   if (!showLogin) return null;
 
   return (
@@ -31,6 +32,7 @@ const AuthModal = ({
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
+            {/* 根據 isLogin 狀態顯示不同的標題 */}
             {isLogin ? '歡迎回來' : '加入我們'}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl" title="關閉">
@@ -53,7 +55,7 @@ const AuthModal = ({
               />
             </div>
           )}
-          
+          {/* 電子郵件輸入框 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">電子郵件 <span className="text-red-500">*</span></label>
             <input
@@ -66,15 +68,15 @@ const AuthModal = ({
               placeholder="your@email.com"
             />
           </div>
-          
+          {/* 密碼輸入框 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">密碼 <span className="text-red-500">*</span></label>
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password"}// 根據 showPassword 狀態切換 input 類型
                 required
                 name="password"
-                minLength={isLogin ? undefined : 6}
+                minLength={isLogin ? undefined : 6}// 註冊模式下要求密碼最小長度為 6
                 value={isLogin ? loginForm.password : registerForm.password}
                 onChange={isLogin ? onLoginFormChange : onRegisterFormChange}
                 className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -84,17 +86,17 @@ const AuthModal = ({
                 type="button"
                 onClick={onToggleShowPassword}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
+              > {/* 根據 showPassword 狀態顯示不同的圖標 */}
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
-          
+          {/* 提交按鈕 */}
           <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium text-lg mt-6">
             {isLogin ? '登入' : '註冊'}
           </button>
         </form>
-        
+        {/* 切換模式的按鈕 */}
         <div className="mt-6 text-center">
           <button onClick={onSwitchMode} className="text-blue-600 hover:text-blue-700 text-sm hover:underline transition-all">
             {isLogin ? '還沒有帳號？立即註冊' : '已有帳號？立即登入'}
@@ -104,7 +106,13 @@ const AuthModal = ({
     </div>
   );
 };
-  
+
+
+/**
+ * FakeNewsDetector 主應用程序組件
+ * @description 這是應用的核心組件，管理所有狀態、頁面路由和業務邏輯。
+ */
+
 export default function FakeNewsDetector() {
   // 主要狀態管理
   const [currentPage, setCurrentPage] = useState('home'); // 當前頁面狀態
@@ -128,52 +136,56 @@ export default function FakeNewsDetector() {
   // 錯誤處理和通知
   const [notification, setNotification] = useState(null); // 通知訊息
 
-  /**
-   * [MODIFIED] 初始化：檢查登入狀態並預註冊帳號
-   * 1. 檢查 localStorage 中是否有登入 token
-   * 2. 檢查 localStorage 中是否有用戶數據庫，若無則創建並加入預設帳號
+/**
+   * [useEffect] - 組件初始化鉤子
+   * @description 當組件首次加載時執行。
+   *              主要任務是檢查 localStorage 中是否存在有效的登入 token，
+   *              如果存在，則嘗試從後端獲取用戶信息以恢復登入狀態。
    */
+  
   useEffect(() => {
    
     
     const token = localStorage.getItem('token');
     if (token) {
-      // Fetch user data from the protected '/me' endpoint
+      // 使用 token 向後端 /api/users/me 發起請求，驗證 token 並獲取用戶資料
+      
       fetch("http://140.127.74.173:8000/api/users/me", {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`// 在請求頭中附帶 token
         }
       })
       .then(response => {
         if (response.ok) {
           return response.json();
         }
-        // If token is invalid/expired, log out
+        // 如果 token 無效或過期，伺服器會返回錯誤，此時應登出用戶
         throw new Error('Session expired');
       })
       .then(userData => {
+        // 成功獲取用戶數據，更新 user 狀態
         setUser(userData);
-        // Load user-specific history
+        // 從 localStorage 加載該用戶的歷史記錄
         const history = localStorage.getItem(`history_${userData.email}`);
         if (history) setAnalysisHistory(JSON.parse(history));
       })
       .catch(error => {
         console.error("Session check failed:", error);
-        handleLogout(); // Clear invalid token and user state
+        handleLogout(); // 如果 token 驗證失敗，執行登出操作
       });
     }
-  }, []);
+  }, []);// 空依賴數組確保此 effect 只在組件掛載時運行一次
 
   /**
    * 顯示通知訊息
    */
   const showNotification = useCallback((message, type = 'info') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+    setTimeout(() => setNotification(null), 3000); // 3 秒後自動隱藏通知
   }, []);
 
   /**
-   * [MODIFIED] 處理用戶登入 - 連接本地資料庫
+   * 處理用戶登入 - 連接本地資料庫
    */
   const handleLogin = async (e) => {
      e.preventDefault();
@@ -182,12 +194,13 @@ export default function FakeNewsDetector() {
       return;
     }
 
-    // FastAPI's OAuth2PasswordRequestForm expects form data
+    // FastAPI 的 OAuth2PasswordRequestForm 期望接收 form-data 格式的數據
     const formData = new URLSearchParams();
-    formData.append('username', loginForm.email);
+    formData.append('username', loginForm.email);// 注意：後端需要 'username' 字段
     formData.append('password', loginForm.password);
 
     try {
+      // 1. 發送登入請求
       const response = await fetch("http://140.127.74.173:8000/api/users/login", {
         method: 'POST',
         body: formData,
@@ -198,21 +211,22 @@ export default function FakeNewsDetector() {
       if (!response.ok) {
         throw new Error(data.detail || '登入失敗');
       }
-
+      // 2. 登入成功，將 token 存儲到 localStorage
       localStorage.setItem('token', data.access_token);
       
-      // Fetch user details after getting token
+      // 3. 使用剛獲取的 token 再次請求用戶詳細信息
       const meResponse = await fetch("http://140.127.74.173:8000/api/users/me", {
           headers: { 'Authorization': `Bearer ${data.access_token}` }
       });
       const userData = await meResponse.json();
+      // 4. 更新前端狀態
       setUser(userData);
       
       setShowLogin(false);
       setLoginForm({ email: '', password: '' });
       showNotification('登入成功！', 'success');
 
-      // Load history for the logged-in user
+      // 5. 加載該用戶的歷史記錄
       const history = localStorage.getItem(`history_${userData.email}`);
       if (history) setAnalysisHistory(JSON.parse(history));
 
@@ -222,10 +236,11 @@ export default function FakeNewsDetector() {
   };
 
   /**
-   * [MODIFIED] 處理用戶註冊 - 連接本地資料庫
+   * 處理用戶註冊 - 連接本地資料庫
    */
   const handleRegister = async (e) => {
     e.preventDefault();
+    // 基本的客戶端驗證
     if (!registerForm.name || !registerForm.email || !registerForm.password) {
       showNotification('請填寫完整資訊', 'error');
       return;
@@ -236,6 +251,7 @@ export default function FakeNewsDetector() {
     }
     
     try {
+      // 發送註冊請求，body 為 JSON 格式
       const response = await fetch("http://140.127.74.173:8000/api/users/register", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -244,11 +260,12 @@ export default function FakeNewsDetector() {
       
       const data = await response.json();
       if (!response.ok) {
+        // 處理後端返回的錯誤，例如 "Email already registered"
         throw new Error(data.detail || '註冊失敗');
       }
       
       showNotification('註冊成功！請立即登入。', 'success');
-      // Switch to login view after successful registration
+      // 註冊成功後，自動切換到登入模式並清空表單
       setIsLogin(true); 
       setRegisterForm({ name: '', email: '', password: '' });
 
@@ -262,29 +279,30 @@ export default function FakeNewsDetector() {
    * 處理用戶登出
    */
   const handleLogout = useCallback(() => {
+    // 1. 從 localStorage 移除 token
     localStorage.removeItem('token');
     
-    
+    // 2. 重置所有與用戶相關的狀態
     setUser(null);
-    setCurrentPage('home');
-    setAnalysisResult(null);
-    setAnalysisHistory([]);
+    setCurrentPage('home');// 返回首頁
+    setAnalysisResult(null);// 清除分析結果
+    setAnalysisHistory([]);// 清空歷史記錄
     
     showNotification('已成功登出', 'info');
-  }, []);
+  }, []);// 使用 useCallback เพื่อ避免不必要的重新創建
 
   /**
-   * [MODIFIED] 處理新聞分析 - 連接 FastAPI 後端
+   * 處理新聞分析 - 連接 FastAPI 後端
    */
   const handleAnalysis = async (e) => {
     e.preventDefault();
-    
+    // 步驟 1: 檢查用戶是否登入
     if (!user) {
       setShowLogin(true);
       showNotification('請先登入以使用檢測功能', 'info');
       return;
     }
-
+    // 步驟 2: 獲取並驗證輸入內容
     const content = activeTab === 'url' ? newsUrl.trim() : newsContent.trim();
     if (!content) {
       showNotification('請輸入要檢測的內容', 'error');
@@ -299,7 +317,7 @@ export default function FakeNewsDetector() {
         return;
       }
     }
-
+     // 步驟 3: 檢查登入 token 是否仍然有效
      const token = localStorage.getItem('token');
     if (!token) {
         showNotification('您的登入已過期，請重新登入。', 'error');
@@ -307,38 +325,41 @@ export default function FakeNewsDetector() {
         setShowLogin(true);
         return;
     }
+    // 步驟 4: 設置加載狀態並清除舊結果
     setIsAnalyzing(true);
     setAnalysisResult(null); // 清除上次結果
 
     try {
-      // 連接到 FastAPI 後端
+      // 步驟 5: 發送 API 請求到後端
       const response = await fetch("http://140.127.74.173:8000/predict", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`// 附上認證 token
         },
         body: JSON.stringify({ text: content })
       });
-
+      // 處理特定的 401 Unauthorized 錯誤
       if (response.status === 401) {
           throw new Error('登入驗證失敗，請重新登入。');
       }
-
+      // 處理其他伺服器錯誤
       if (!response.ok) {
         throw new Error(`伺服器錯誤: ${response.status} ${response.statusText}`);
       }
-
+      // 解析後端返回的 JSON 數據
       const data = await response.json();
-
+      
+      // 處理後端返回的業務邏輯錯誤
       if (data.error) {
         showNotification(data.error, 'error');
         setIsAnalyzing(false); // 記得在出錯時也要結束分析狀態
         return;
       }
 
-      // [新的、最簡潔的結果生成邏輯從這裡開始] =============================
-
+      // 步驟 6: [核心邏輯] 將後端的簡單響應轉換為前端 UI 需要的複雜數據結構
+      // 目前後端僅返回 { "label": "真" } 或 { "label": "假" }
+      
       // 1. 根據後端回傳的 data.label 判斷新聞真假
       const isFake = data.label === '假';
 
@@ -384,11 +405,14 @@ export default function FakeNewsDetector() {
           : '此內容相對可信，但仍建議保持批判性思考和多方查證。'
       };
 
-      // 3. 更新前端狀態
-      setAnalysisResult(result);
-
+      // 步驟 7: 更新前端狀態
+      setAnalysisResult(result);// 設置分析結果以渲染 UI
+      
+      // 如果用戶已登入，更新其歷史記錄
       if (user && user.email) {
         const newHistory = [result, ...analysisHistory].slice(0, 10);
+        
+        // 將更新後的歷史記錄存入 localStorage，以用戶 email 作為 key
         setAnalysisHistory(newHistory);
         localStorage.setItem(`history_${user.email}`, JSON.stringify(newHistory));
       }
@@ -415,7 +439,7 @@ export default function FakeNewsDetector() {
     setAnalysisResult(null);
   };
   
-  // [NEW] 分離表單輸入處理函數，可增加代碼清晰度，並有助於解決複雜的輸入問題
+  // 表單輸入處理函數
   const handleLoginFormChange = (e) => {
     const { name, value } = e.target;
     setLoginForm(prev => ({ ...prev, [name]: value }));
@@ -425,15 +449,17 @@ export default function FakeNewsDetector() {
     const { name, value } = e.target;
     setRegisterForm(prev => ({ ...prev, [name]: value }));
   };
-
+  // --- 模態框控制函數 ---
   const closeAuthModal = () => {
     setShowLogin(false);
+    // 關閉時清空表單數據，避免下次打開時殘留
     setLoginForm({ email: '', password: '' });
     setRegisterForm({ name: '', email: '', password: '' });
   };
   
   const switchAuthMode = () => {
     setIsLogin(!isLogin);
+    // 切換模式時也清空表單
     setLoginForm({ email: '', password: '' });
     setRegisterForm({ name: '', email: '', password: '' });
   };
