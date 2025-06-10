@@ -108,7 +108,7 @@ const AuthModal = ({
 export default function FakeNewsDetector() {
   // 主要狀態管理
   const [currentPage, setCurrentPage] = useState('home'); // 當前頁面狀態
-  const [activeTab, setActiveTab] = useState('url'); // 檢測標籤（URL或內容）
+  const [activeTab, setActiveTab] = useState('content'); // 檢測標籤（內容）
   const [newsUrl, setNewsUrl] = useState(''); // 新聞URL輸入
   const [newsContent, setNewsContent] = useState(''); // 新聞內容輸入
   
@@ -139,7 +139,7 @@ export default function FakeNewsDetector() {
     const token = localStorage.getItem('token');
     if (token) {
       // Fetch user data from the protected '/me' endpoint
-      fetch("https://nknu115-project.onrender.com/api/users/me", {
+      fetch("http://140.127.74.173:8000/api/users/me", {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -188,7 +188,7 @@ export default function FakeNewsDetector() {
     formData.append('password', loginForm.password);
 
     try {
-      const response = await fetch("https://nknu115-project.onrender.com/api/users/login", {
+      const response = await fetch("http://140.127.74.173:8000/api/users/login", {
         method: 'POST',
         body: formData,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -202,7 +202,7 @@ export default function FakeNewsDetector() {
       localStorage.setItem('token', data.access_token);
       
       // Fetch user details after getting token
-      const meResponse = await fetch("https://nknu115-project.onrender.com/api/users/me", {
+      const meResponse = await fetch("http://140.127.74.173:8000/api/users/me", {
           headers: { 'Authorization': `Bearer ${data.access_token}` }
       });
       const userData = await meResponse.json();
@@ -236,7 +236,7 @@ export default function FakeNewsDetector() {
     }
     
     try {
-      const response = await fetch("https://nknu115-project.onrender.com/api/users/register", {
+      const response = await fetch("http://140.127.74.173:8000/api/users/register", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(registerForm)
@@ -312,7 +312,7 @@ export default function FakeNewsDetector() {
 
     try {
       // 連接到 FastAPI 後端
-      const response = await fetch("https://nknu115-project.onrender.com", {
+      const response = await fetch("http://140.127.74.173:8000/predict", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -333,61 +333,67 @@ export default function FakeNewsDetector() {
 
       if (data.error) {
         showNotification(data.error, 'error');
+        setIsAnalyzing(false); // 記得在出錯時也要結束分析狀態
         return;
       }
 
-      // 根據後端回傳的 label ('真' 或 '假') 來生成結果
+      // [新的、最簡潔的結果生成邏輯從這裡開始] =============================
+
+      // 1. 根據後端回傳的 data.label 判斷新聞真假
       const isFake = data.label === '假';
-      
-      // 根據結果生成分數，使其不完全隨機
-      const fakeScore = isFake 
-        ? Math.floor(Math.random() * 20) + 75  // 假新聞: 75-94%
-        : Math.floor(Math.random() * 20) + 5;   // 真新聞: 5-24%
-      
-      const realScore = 100 - fakeScore;
-      const confidence = Math.floor(Math.random() * 15) + 85; // 85-99%
 
-      const riskLevel = fakeScore > 60 ? 'high' : fakeScore > 30 ? 'medium' : 'low';
-
+      // 2. 組裝一個【包含所有必要欄位】的 result 物件
+      //    我們用固定的或基於真假的簡單值來填充
       const result = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
         type: activeTab,
         content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-        fakeScore,
-        realScore,
-        confidence,
-        riskLevel,
+        
+        // --- 填充卡片顯示所需的分數和等級 ---
+        fakeScore: isFake ? 85 : 15,          // 假新聞給高分，真新聞給低分
+
+        realScore: isFake ? 15 : 85,          // 與 fakeScore 相反
+        confidence: 95,                       // 給一個固定的高信心度
+        riskLevel: isFake ? 'high' : 'low',   // 風險等級
+        
+        // --- 填充分析報告所需的描述 ---
         analysis: {
-          source: isFake ? '來源可信度較低，建議查證' : '來源具有一定可信度',
-          content: isFake ? '內容存在明顯誇大或偏見' : '內容表述相對客觀',
-          structure: isFake ? '結構缺乏邏輯性和證據支持' : '結構完整且論證清晰',
-          language: isFake ? '語言帶有明顯情緒色彩' : '語言相對中性客觀'
+          source: isFake ? '來源可信度較低' : '來源可信度較高',
+          content: isFake ? '內容可能存在偏見' : '內容相對客觀',
+          // [重要] 把之前 JSX 裡的 'structure' 欄位也加回來
+          structure: isFake ? '結構缺乏證據支持' : '結構完整',
+          language: isFake ? '語言帶有情緒色彩' : '語言較為中性',
         },
+        
+        // --- 填充詳細資訊 ---
         details: {
           keyWords: ['新聞', '報導', '事實', '消息'],
+          // 在這裡展示模型最直接的判斷結果
           sourceAnalysis: `由 RoBERTa 模型提供判斷結果 (${data.label})`,
           recommendations: [
             '建議查證多個可信來源',
             '注意資訊發布的時間和背景',
             '保持批判性思維'
           ]
-        }
+        },
+
+        // --- 填充專業建議 ---
+        professionalAdvice: isFake 
+          ? '此內容存在較高的假新聞風險，強烈建議查證多個可靠來源後再分享。'
+          : '此內容相對可信，但仍建議保持批判性思考和多方查證。'
       };
 
+      // 3. 更新前端狀態
       setAnalysisResult(result);
 
-      const newHistory = [result, ...analysisHistory].slice(0, 10);
-      setAnalysisHistory(newHistory);
-      localStorage.setItem(`history_${user.email}`, JSON.stringify(newHistory));
+      if (user && user.email) {
+        const newHistory = [result, ...analysisHistory].slice(0, 10);
+        setAnalysisHistory(newHistory);
+        localStorage.setItem(`history_${user.email}`, JSON.stringify(newHistory));
+      }
 
       showNotification('分析完成！', 'success');
-
-      if (user && user.email) {
-          const newHistory = [result, ...analysisHistory].slice(0, 10);
-          setAnalysisHistory(newHistory);
-          localStorage.setItem(`history_${user.email}`, JSON.stringify(newHistory));
-      }
     } catch (error) {
       console.error('分析失敗:', error);
       showNotification(`分析請求失敗: ${error.message}`, 'error');
@@ -573,6 +579,7 @@ export default function FakeNewsDetector() {
           )}
         </div>
 
+        {/* 短文檢測區域 */}
         {user && (
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-12 max-w-4xl mx-auto border border-white/20">
             <div className="flex justify-between items-center mb-6">
@@ -586,56 +593,31 @@ export default function FakeNewsDetector() {
                 </button>
               )}
             </div>
-            
-            <div className="flex border-b mb-6">
-              
-              <button
-                onClick={() => setActiveTab('content')}
-                className={`px-6 py-3 font-medium transition-all duration-200 ${activeTab === 'content' 
-                  ? 'border-b-2 border-blue-600 text-blue-600' 
-                  : 'text-gray-600 hover:text-gray-800'}`}
-              >
-                <FileText className="w-4 h-4 inline mr-2" />
-                短文檢測
-              </button>
-            </div>
-
             <form onSubmit={handleAnalysis}>
-              {activeTab === 'url' ? (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    新聞網址 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={newsUrl}
-                    onChange={(e) => setNewsUrl(e.target.value)}
-                    placeholder="https://example.com/news-article"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    required
-                    disabled={isAnalyzing}
-                  />
-                </div>
-              ) : (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    新聞內容 <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={newsContent}
-                    onChange={(e) => setNewsContent(e.target.value)}
-                    placeholder="請貼上完整的新聞內容，包括標題和正文..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                    rows="8"
-                    required
-                    disabled={isAnalyzing}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    建議輸入完整的新聞內容以獲得更準確的分析結果
-                  </p>
-                </div>
-              )}
-
+              <div className="flex border-b mb-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('content')}
+                  className={`px-6 py-3 font-medium transition-all duration-200 ${activeTab === 'content' 
+                    ? 'border-b-2 border-blue-600 text-blue-600' 
+                    : 'text-gray-600 hover:text-gray-800'}`}
+                >
+                  <FileText className="w-4 h-4 inline mr-2" />
+                  短文檢測
+                </button>
+              </div>
+              <div className="mb-6">
+                <textarea
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  rows={5}
+                  placeholder="請貼上或輸入要檢測的新聞內容（限 1000 字內）"
+                  value={newsContent}
+                  onChange={e => setNewsContent(e.target.value)}
+                  maxLength={1000}
+                  required
+                  disabled={isAnalyzing}
+                />
+              </div>
               <button
                 type="submit"
                 disabled={isAnalyzing}
@@ -644,7 +626,7 @@ export default function FakeNewsDetector() {
                 {isAnalyzing ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                    AI 正在深度分析中...
+                    AI 正在分析中...
                   </>
                 ) : (
                   <>
@@ -654,7 +636,6 @@ export default function FakeNewsDetector() {
                 )}
               </button>
             </form>
-
             {analysisResult && (
               <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200">
                 <div className="flex items-center justify-between mb-6">
@@ -714,12 +695,6 @@ export default function FakeNewsDetector() {
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                         <span className="font-medium">內容分析</span>
                         <span className="text-sm text-gray-600">{analysisResult.analysis.content}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                        <span className="font-medium">結構分析</span>
-                        <span className="text-sm text-gray-600">{analysisResult.analysis.structure}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                         <span className="font-medium">語言分析</span>
