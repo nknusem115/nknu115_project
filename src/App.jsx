@@ -1147,7 +1147,7 @@ export default function FakeNewsDetector() {
       </div>
     </div>
   );  
-
+  // --- 主渲染邏輯 ---
   return (
     <div>        
       <Header />
@@ -1168,7 +1168,8 @@ export default function FakeNewsDetector() {
         onRegisterFormChange={handleRegisterFormChange}
         onToggleShowPassword={() => setShowPassword(!showPassword)}
       />
-      
+
+      {/* 根據 currentPage 狀態，條件渲染對應的頁面組件 */}
       {currentPage === 'home' && <HomePage />}
       {currentPage === 'detection' && <DetectionPage />}
       {currentPage === 'education' && <EducationPage />}
