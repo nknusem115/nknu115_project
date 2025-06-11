@@ -95,23 +95,41 @@ __API__	Pydantic, RESTful API	用於資料驗證和定義 API 結構
 ## 專案結構
 
 truth-guardian/
+
 ├── backend/
+
 │ ├── crud.py # 資料庫增刪改查操作 (使用 SQLAlchemy)
+
 │ ├── database.py # 資料庫連線設定 (使用 SQLAlchemy)
+
 │ ├── main.py # FastAPI 應用主程式
+
 │ ├── models.py # SQLAlchemy 資料庫模型
+
 │ ├── schemas.py # Pydantic 資料結構模型
+
 │ ├── security.py # 密碼與 JWT 安全相關函數
+
 │ ├── .env.example # 環境變數範本
+
 │ └── requirements.txt # Python 依賴
+
 │
+
 └── frontend/
+
 ├── public/ # 公共靜態資源目錄 (例如 favicon.ico, images)
+
 ├── src/ # 原始碼目錄
+
 │ └── App.jsx # React 主應用程式組件
+
 ├── .gitignore # Git 忽略清單
+
 ├── index.html # 應用程式的進入點 HTML
+
 ├── package.json # 專案依賴與腳本設定
+
 └── vite.config.js # Vite 專案設定檔
 
 
