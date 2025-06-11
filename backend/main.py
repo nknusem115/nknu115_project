@@ -1,15 +1,16 @@
-# backend/main.py (合併後的最終版本，用於部署到 Render)
-
-# --- 核心依賴 ---
-import requests
+# --- 核心依賴 (合併兩者的需求) ---
 import time
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm ,OAuth2PasswordBearer
+from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+import traceback
+import os
+import torch
+from transformers import AutoConfig,BertTokenizer, RobertaForSequenceClassification
 
-# --- 專案模組 (絕對導入) ---
+# --- 專案模組 (使用者系統) ---
 import crud
 import models
 import schemas
@@ -17,27 +18,23 @@ import security
 from database import engine, get_db
 
 # --- 創建資料庫表格 ---
-# 這行程式碼會根據 models.py 的定義，在 PostgreSQL 中創建 'users' 表格
+# 這將在實驗室伺服器的 backend 目錄下創建一個 fakenews_detector.db 檔案
 try:
     models.Base.metadata.create_all(bind=engine)
     logger.info("資料庫表格檢查/創建完成。")
 except Exception as e:
     logger.error(f"創建資料庫表格時失敗: {e}")
 
-
 # --- 初始化 FastAPI 應用 ---
 app = FastAPI(
-    title="混合架構新聞檢測 API (指揮中心)",
-    description="處理使用者認證，並代理模型預測請求至實驗室伺服器。",
-    version="3.0.0",
+    title="全功能假新聞檢測 API (實驗室版)",
+    description="處理使用者認證與本地模型預測。",
+    version="4.0.0 (Final)",
 )
 
-
 # --- CORS (跨來源資源共享) 配置 ---
-# 這裡只允許您的前端訪問，更安全
 origins = [
-    "http://localhost:5173",  # 您本地開發環境
-    # "https://your-deployed-frontend.onrender.com" # 未來部署後的前端網址
+    "http://localhost:5173",  # 允許您本地的 React 開發伺服器
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -47,9 +44,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- [核心合併 1] 在應用啟動時加載模型 ---
+try:
+    logger.info("正在加載模型，請稍候...")  
+    # 確保這個路徑在實驗室伺服器上是正確的！
+    # 例如，模型資料夾與 main.py 在同一目錄下
+    tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
+    model_path = r"C:\Users\user\Desktop\Model_API\app\backend\model_dir"
+    model = RobertaForSequenceClassification.from_pretrained(model_path,local_files_only=True)
+    model.eval()
+    logger.info("模型加載成功！")
+except Exception as e:
+    logger.error(f"模型加載失敗: {e}")
+    # 在實際生產中，如果模型加載失敗，可能需要讓應用程式退出
+    # raise e 
+    logger.error(f"錯誤訊息: {str(e)}")
+    logger.error("完整錯誤追蹤：")
+    logger.error(traceback.format_exc())
 
-# --- 使用者認證與依賴 ---
-# (這部分與之前帶有資料庫的版本完全相同)
+# --- 使用者認證與依賴 (從指揮中心版本複製) ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/users/login")
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -71,15 +84,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
-
 # --- API 路由 (Endpoints) ---
 
-# 根路由，用於測試服務是否上線
+# 根路由
 @app.get("/")
 def read_root():
-    return {"message": "指揮中心 API 已上線"}
+    return {"message": "全功能假新聞檢測 API 已上線"}
 
-# 使用者註冊路由
+# --- 使用者系統路由 ---
 @app.post("/api/users/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -87,7 +99,6 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="此電子郵件已被註冊")
     return crud.create_user(db=db, user=user)
 
-# 使用者登入路由
 @app.post("/api/users/login", response_model=schemas.Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = crud.get_user_by_email(db, email=form_data.username)
@@ -100,59 +111,46 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = security.create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
-# 獲取當前使用者資訊路由
 @app.get("/api/users/me", response_model=schemas.User)
 async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
     return current_user
 
-
-# --- [核心修改] 模型預測代理路由 ---
-
-# 定義實驗室模型服務的地址
-LAB_MODEL_URL = "http://140.127.74.173:8000/predict"
+# --- [核心合併 2] 模型預測路由 ---
 
 # Pydantic 模型，用於接收前端的請求體
 class TextRequest(schemas.BaseModel):
     text: str
 
-@app.post("/api/predict")
-async def proxy_predict_news(
+@app.post("/predict")
+async def predict_news(
     request_data: TextRequest,  # 接收前端發來的 {"text": "..."}
-    current_user: schemas.User = Depends(get_current_user) # 保護路由，確保使用者已登入
+    current_user: schemas.User = Depends(get_current_user) # 保護路由，需要登入
 ):
     input_text = request_data.text.strip()
     if not input_text:
         raise HTTPException(status_code=400, detail="輸入內容不可為空")
 
-    logger.info(f"使用者 {current_user.email} 請求分析，轉發至實驗室伺服器: {LAB_MODEL_URL}")
+    logger.info(f"使用者 {current_user.email} 請求分析，內容: '{input_text[:30]}...'")
     start_time = time.time()
 
+    # 使用全局加載的模型進行預測
     try:
-        # 將請求轉發到實驗室的模型服務
-        # 注意：這裡我們將 TextRequest 的 'text' 欄位，包裝成實驗室伺服器期待的 'content' 欄位
-        response = requests.post(
-            LAB_MODEL_URL,
-            json={"content": input_text},  # <-- 重要：匹配實驗室後端的 NewsRequest(content: str)
-            timeout=30
-        )
-        response.raise_for_status() # 如果實驗室伺服器回傳 4xx 或 5xx 錯誤，這裡會拋出異常
-
-        # 實驗室伺服器回傳的格式是 {"label": 0/1, "confidence": 0.98}
-        lab_result = response.json()
+        inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=512, padding=True)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            label_index = int(torch.argmax(outputs.logits, dim=1))
         
         # 將數字標籤轉換為前端期望的字串標籤 "真" 或 "假"
-        # 假設 0 代表假，1 代表真 (您需要和同學確認這個對應關係)
-        prediction_label = "真" if lab_result.get("label") == 1 else "假"
+        # !!! 請務必與同學確認這個對應關係 !!!
+        # 假設 0 代表假 (Fake), 1 代表真 (Real)
+        final_label = "真" if label_index == 1 else "假"
 
         duration = round((time.time() - start_time) * 1000, 2)
-        logger.info(f"從實驗室收到回應，原始標籤: {lab_result.get('label')}, 轉換後標籤: {prediction_label}, 總耗時: {duration}ms")
+        logger.info(f"預測完成。標籤: {final_label} (原始: {label_index}), 耗時: {duration}ms")
 
         # 回傳前端期望的格式 {"label": "真/假"}
-        return {"label": prediction_label}
-
-    except requests.exceptions.Timeout:
-        logger.error("請求實驗室模型服務超時")
-        raise HTTPException(status_code=504, detail="模型服務響應超時，請稍後再試")
-    except requests.exceptions.RequestException as e:
-        logger.error(f"無法連接至實驗室模型服務: {e}")
-        raise HTTPException(status_code=503, detail="無法連接至後端模型服務")
+        return {"label": final_label}
+        
+    except Exception as e:
+        logger.error(f"模型預測時發生錯誤: {e}")
+        raise HTTPException(status_code=500, detail="模型在進行預測時發生內部錯誤。")
