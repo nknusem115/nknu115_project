@@ -80,57 +80,41 @@ __此架構使模型可以獨立更新和擴展，而不影響主應用程式__
 
 __類別	技術	說明__
 
-前端	React.js, Vite, Tailwind CSS, lucide-react	構建現代化的使用者介面與互動體驗
+__前端__	React.js, Vite, Tailwind CSS, lucide-react	構建現代化的使用者介面與互動體驗
 
-後端	FastAPI, Python 3.9+	高效能的非同步 Web 框架
+__後端__	FastAPI, Python 3.9+	高效能的非同步 Web 框架
 
-資料庫	 SQLite 	
+__資料庫__	 SQLite 	
 
-ORM	SQLAlchemy	物件關聯對映工具，讓我們用 Python 物件操作資料庫，而非手寫 SQL
+__ORM	SQLAlchemy__	物件關聯對映工具，讓我們用 Python 物件操作資料庫，而非手寫 SQL
 
-認證	JWT, Passlib	用於使用者身份驗證與密碼安全
+__認證__	JWT, Passlib	用於使用者身份驗證與密碼安全
 
-API	Pydantic, RESTful API	用於資料驗證和定義 API 結構
+__API__	Pydantic, RESTful API	用於資料驗證和定義 API 結構
 
 ## 專案結構
 
 truth-guardian/
-
 ├── backend/
-
-│   ├── crud.py   # 資料庫增刪改查操作 (使用 SQLAlchemy)
-
-│   ├── database.py       # 資料庫連線設定 (使用 SQLAlchemy)
-
-│   ├── main.py           # FastAPI 應用主程式
-
-│   ├── models.py         # SQLAlchemy 資料庫模型
-
-│   ├── schemas.py        # Pydantic 資料結構模型
-
-│   ├── security.py       # 密碼與 JWT 安全相關函數
-
-│   ├── .env.example      # 環境變數範本
-
-│   └── requirements.txt  # Python 依賴
-
+│ ├── crud.py # 資料庫增刪改查操作 (使用 SQLAlchemy)
+│ ├── database.py # 資料庫連線設定 (使用 SQLAlchemy)
+│ ├── main.py # FastAPI 應用主程式
+│ ├── models.py # SQLAlchemy 資料庫模型
+│ ├── schemas.py # Pydantic 資料結構模型
+│ ├── security.py # 密碼與 JWT 安全相關函數
+│ ├── .env.example # 環境變數範本
+│ └── requirements.txt # Python 依賴
 │
+└── frontend/
+├── public/ # 公共靜態資源目錄 (例如 favicon.ico, images)
+├── src/ # 原始碼目錄
+│ └── App.jsx # React 主應用程式組件
+├── .gitignore # Git 忽略清單
+├── index.html # 應用程式的進入點 HTML
+├── package.json # 專案依賴與腳本設定
+└── vite.config.js # Vite 專案設定檔
 
-└── frontend/               # <--- Vite 專案根目錄
 
-    ├── public/             # 公共靜態資源目錄 (例如 favicon.ico, images)
-    
-    ├── src/                # 原始碼目錄
-    
-    │   └── App.jsx         # React 主應用程式組件
-    
-    ├── .gitignore          # Git 忽略清單
-    
-    ├── index.html          # 應用程式的進入點 HTML
-    
-    ├── package.json        # 專案依賴與腳本設定
-    
-    └── vite.config.js      # Vite 專案設定檔
     
 # 安裝與啟動指南
 
