@@ -11,9 +11,6 @@ load_dotenv()
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./fakenews_detector.db")
 
 # 如果是 PostgreSQL，需要稍微修改 engine 創建方式
-if SQLALCHEMY_DATABASE_URL.startswith("postgres"):
-    # Render 的 URL 可能還是 postgres://，SQLAlchemy 1.4+ 推薦用 postgresql://
-    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
