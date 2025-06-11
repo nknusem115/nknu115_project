@@ -1,5 +1,5 @@
-#__真相守門員 - AI 假新聞檢測平台__
-###真相守門員 (Truth Guardian) 是一個全端應用程式，旨在利用人工智慧技術幫助使用者辨識和分析可疑的新聞內容。它採用了現代化的前後端分離架構，提供流暢的使用者體驗和穩健的後端服務
+# __真相守門員 - AI 假新聞檢測平台__
+### 真相守門員 (Truth Guardian) 是一個全端應用程式，旨在利用人工智慧技術幫助使用者辨識和分析可疑的新聞內容。它採用了現代化的前後端分離架構，提供流暢的使用者體驗和穩健的後端服務
 
 ![alt text](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
 
@@ -11,7 +11,7 @@
 
 ![alt text](https://img.shields.io/badge/TailwindCSS-06B6D4?logo=tailwindcss&logoColor=white)
 
-##核心功能
+## 核心功能
 __使用者認證系統__：支援安全的電子郵件/密碼註冊與登入，使用 JWT (JSON Web Tokens) 進行會話管理
 
 __AI 驅動的短文檢測__：登入後，使用者可提交文本內容，系統將透過後端 AI 模型進行分析，判斷其為真實或虛假新聞的可能性
