@@ -90,41 +90,45 @@ API	Pydantic, RESTful API	用於資料驗證和定義 API 結構
 
 truth-guardian/
 
-── backend/
+├── backend/
 
-   ├── crud.py    # 資料庫增刪改查操作 (使用 SQLAlchemy)
+│   ├── crud.py   # 資料庫增刪改查操作 (使用 SQLAlchemy)
 
-   ├── database.py       # 資料庫連線設定 (使用 SQLAlchemy)
+│   ├── database.py       # 資料庫連線設定 (使用 SQLAlchemy)
 
-   ├── main.py           # FastAPI 應用主程式
+│   ├── main.py           # FastAPI 應用主程式
 
-   ├── models.py         # SQLAlchemy 資料庫模型
+│   ├── models.py         # SQLAlchemy 資料庫模型
 
-   ├── schemas.py        # Pydantic 資料結構模型
+│   ├── schemas.py        # Pydantic 資料結構模型
 
-   ├── security.py       # 密碼與 JWT 安全相關函數
+│   ├── security.py       # 密碼與 JWT 安全相關函數
 
-   ├── .env.example      # 環境變數範本
+│   ├── .env.example      # 環境變數範本
 
-   └── requirements.txt  # Python 依賴
+│   └── requirements.txt  # Python 依賴
 
+│
 
-└── frontend/
+└── frontend/               # <--- Vite 專案根目錄
 
-    ├── public/
+    ├── public/             # 公共靜態資源目錄 (例如 favicon.ico, images)
     
-    ├── src/
+    ├── src/                # 原始碼目錄
     
-    │   └── App.jsx       # React 主應用程式組件
+    │   └── App.jsx         # React 主應用程式組件
     
-    ├── index.html
+    ├── .gitignore          # Git 忽略清單
     
-    ├── package.json
+    ├── index.html          # 應用程式的進入點 HTML
     
-    └── vite.config.js
+    ├── package.json        # 專案依賴與腳本設定
+    
+    └── vite.config.js      # Vite 專案設定檔
     
 # 安裝與啟動指南
 __前置需求__
+
 Node.js (v18 或更高版本)
 
 Python (v3.9 或更高版本)
@@ -132,12 +136,14 @@ Python (v3.9 或更高版本)
 Git
 
 ## 1. 後端設定 (FastAPI)
+
  1. 克隆專案
 ```git clone <your-repository-url>```
 ```cd truth-guardian/backend```
 
 # 2. 創建並激活 Python 虛擬環境
-python -m venv venv
+
+```pythonpython -m venv venv```
 # Windows: venv\Scripts\activate
 # macOS / Linux: source venv/bin/activate
 
