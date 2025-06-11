@@ -142,17 +142,20 @@ Python (v3.9 或更高版本)
 
 Git
 
-## 1. 後端設定 (FastAPI)
+# 1. 後端設定 (FastAPI)
 
  ### 1. 克隆專案
     
 ```git clone <your-repository-url>```
+
 ```cd truth-guardian/backend```
 
 ### 2. 創建並激活 Python 虛擬環境
 
 ```python -m venv venv```
+
  Windows: venv\Scripts\activate
+ 
  macOS / Linux: source venv/bin/activate
 
 ### 3. 安裝依賴
@@ -164,20 +167,28 @@ Git
 #### 複製範本文件
 ```cp .env.example .env```
 
- 編輯 .env 文件，填入你的設定。
- DATABASE_URL 指定了 SQLAlchemy 將要連接的【實際資料庫】。
- 本地開發時，使用簡單的 SQLite；生產環境則換成 PostgreSQL 連線字串。
+ 編輯 .env 文件，填入你的設定
+ 
+ DATABASE_URL 指定了 SQLAlchemy 將要連接的【實際資料庫】
+ 
+ 本地開發時，使用簡單的 SQLite；生產環境則換成 PostgreSQL 連線字串
+ 
  --- .env ---
+ 
  SECRET_KEY="your-super-secret-key-generated-by-openssl"
+ 
  ALGORITHM="HS256"
+ 
  ACCESS_TOKEN_EXPIRE_MINUTES=30
+ 
  DATABASE_URL="sqlite:///./fakenews_detector.db"
+ 
  ------------
 
 ### 5. 啟動後端伺服器 (預設運行在 http://127.0.0.1:8000)
 ```uvicorn main:app --reload```
 
-## 2. 前端設定 (React)
+# 2. 前端設定 (React)
    
 ### 1. 開啟新的終端，進入前端目錄
 ```cd ../frontend```
@@ -191,7 +202,7 @@ Git
  注意：main.py 的 API 路由有 /api 前綴，請確保前端請求路徑與後端路由完全匹配(predict 例外)
  例如：/api/users/login, /api/users/register, /predict
 
-# 4. 啟動前端開發伺服器 (預設運行在 http://localhost:5173)
+### 4. 啟動前端開發伺服器 (預設運行在 http://localhost:5173)
 
 ```npm run dev```
 
