@@ -12,6 +12,7 @@
 ![alt text](https://img.shields.io/badge/TailwindCSS-06B6D4?logo=tailwindcss&logoColor=white)
 
 ## 核心功能
+
 __使用者認證系統__：支援安全的電子郵件/密碼註冊與登入，使用 JWT (JSON Web Tokens) 進行會話管理
 
 __AI 驅動的短文檢測__：登入後，使用者可提交文本內容，系統將透過後端 AI 模型進行分析，判斷其為真實或虛假新聞的可能性
@@ -53,11 +54,11 @@ graph TD
 
 ## 前端應用 (React)：
 
-運行於使用者的瀏覽器
+1.運行於使用者的瀏覽器
 
-負責所有 UI 介面渲染與互動
+2.負責所有 UI 介面渲染與互動
 
-所有對後端的請求只會發送到「後端指揮中心」
+3.所有對後端的請求只會發送到「後端指揮中心」
 
 ## 後端指揮中心 (FastAPI)：
 
@@ -72,39 +73,55 @@ graph TD
 ## 後端實驗室伺服器 (AI 模型)：
 
 一個獨立的、專門運行機器學習模型的伺服器 (URL: http://140.127.74.173:8000/predict)
-
 它不處理使用者身份驗證，只專注於接收文本並回傳分析結果
 
 __此架構使模型可以獨立更新和擴展，而不影響主應用程式__
 
-技術棧
+## 技術棧
 類別	技術	說明
-前端	React.js, Vite, Tailwind CSS, lucide-react	構建現代化的使用者介面與互動體驗。
-後端	FastAPI, Python 3.9+	高效能的非同步 Web 框架。
-資料庫	PostgreSQL (生產), SQLite (開發)	實際的數據儲存系統。
-ORM	SQLAlchemy	物件關聯對映工具，讓我們用 Python 物件操作資料庫，而非手寫 SQL。
-認證	JWT, Passlib	用於使用者身份驗證與密碼安全。
+前端	React.js, Vite, Tailwind CSS, lucide-react	構建現代化的使用者介面與互動體驗
+後端	FastAPI, Python 3.9+	高效能的非同步 Web 框架
+資料庫	 SQLite 	
+ORM	SQLAlchemy	物件關聯對映工具，讓我們用 Python 物件操作資料庫，而非手寫 SQL
+認證	JWT, Passlib	用於使用者身份驗證與密碼安全
 API	Pydantic, RESTful API	用於資料驗證和定義 API 結構
 
 ## 專案結構
 
 truth-guardian/
+
 ├── backend/
-│   ├── crud.py           # 資料庫增刪改查操作 (使用 SQLAlchemy)
+
+│   ├── crud.py    # 資料庫增刪改查操作 (使用 SQLAlchemy)
+
 │   ├── database.py       # 資料庫連線設定 (使用 SQLAlchemy)
+
 │   ├── main.py           # FastAPI 應用主程式
+
 │   ├── models.py         # SQLAlchemy 資料庫模型
+
 │   ├── schemas.py        # Pydantic 資料結構模型
+
 │   ├── security.py       # 密碼與 JWT 安全相關函數
+
 │   ├── .env.example      # 環境變數範本
+
 │   └── requirements.txt  # Python 依賴
+
 │
+
 └── frontend/
+
     ├── public/
+    
     ├── src/
+    
     │   └── App.jsx       # React 主應用程式組件
+    
     ├── index.html
+    
     ├── package.json
+    
     └── vite.config.js
     
 # 安裝與啟動指南
@@ -115,10 +132,10 @@ Python (v3.9 或更高版本)
 
 Git
 
-1. 後端設定 (FastAPI)
-   # 1. 克隆專案
-```git clone <your-repository-url>
-cd truth-guardian/backend```
+## 1. 後端設定 (FastAPI)
+ 1. 克隆專案
+```git clone <your-repository-url>```
+```cd truth-guardian/backend```
 
 # 2. 創建並激活 Python 虛擬環境
 python -m venv venv
