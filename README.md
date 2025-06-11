@@ -89,25 +89,26 @@ API	Pydantic, RESTful API	用於資料驗證和定義 API 結構
 ## 專案結構
 
 truth-guardian/
-├── backend/
 
-│   ├── crud.py    # 資料庫增刪改查操作 (使用 SQLAlchemy)
+── backend/
 
-│   ├── database.py       # 資料庫連線設定 (使用 SQLAlchemy)
+   ├── crud.py    # 資料庫增刪改查操作 (使用 SQLAlchemy)
 
-│   ├── main.py           # FastAPI 應用主程式
+   ├── database.py       # 資料庫連線設定 (使用 SQLAlchemy)
 
-│   ├── models.py         # SQLAlchemy 資料庫模型
+   ├── main.py           # FastAPI 應用主程式
 
-│   ├── schemas.py        # Pydantic 資料結構模型
+   ├── models.py         # SQLAlchemy 資料庫模型
 
-│   ├── security.py       # 密碼與 JWT 安全相關函數
+   ├── schemas.py        # Pydantic 資料結構模型
 
-│   ├── .env.example      # 環境變數範本
+   ├── security.py       # 密碼與 JWT 安全相關函數
 
-│   └── requirements.txt  # Python 依賴
+   ├── .env.example      # 環境變數範本
 
-│
+   └── requirements.txt  # Python 依賴
+
+
 └── frontend/
 
     ├── public/
