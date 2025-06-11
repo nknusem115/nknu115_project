@@ -78,12 +78,19 @@ graph TD
 __此架構使模型可以獨立更新和擴展，而不影響主應用程式__
 
 ## 技術棧
-類別	技術	說明
+
+__類別	技術	說明__
+
 前端	React.js, Vite, Tailwind CSS, lucide-react	構建現代化的使用者介面與互動體驗
+
 後端	FastAPI, Python 3.9+	高效能的非同步 Web 框架
+
 資料庫	 SQLite 	
+
 ORM	SQLAlchemy	物件關聯對映工具，讓我們用 Python 物件操作資料庫，而非手寫 SQL
+
 認證	JWT, Passlib	用於使用者身份驗證與密碼安全
+
 API	Pydantic, RESTful API	用於資料驗證和定義 API 結構
 
 ## 專案結構
@@ -127,6 +134,7 @@ truth-guardian/
     └── vite.config.js      # Vite 專案設定檔
     
 # 安裝與啟動指南
+
 __前置需求__
 
 Node.js (v18 或更高版本)
@@ -137,59 +145,63 @@ Git
 
 ## 1. 後端設定 (FastAPI)
 
- 1. 克隆專案
+ ### 1. 克隆專案
+    
 ```git clone <your-repository-url>```
 ```cd truth-guardian/backend```
 
-# 2. 創建並激活 Python 虛擬環境
+### 2. 創建並激活 Python 虛擬環境
 
-```pythonpython -m venv venv```
-# Windows: venv\Scripts\activate
-# macOS / Linux: source venv/bin/activate
+```python -m venv venv```
+ Windows: venv\Scripts\activate
+ macOS / Linux: source venv/bin/activate
 
-# 3. 安裝依賴
-pip install -r requirements.txt
+### 3. 安裝依賴
 
-# 4. 設定環境變數
-# 複製範本文件
-cp .env.example .env
+```pip install -r requirements.txt```
 
-# 編輯 .env 文件，填入你的設定。
-# DATABASE_URL 指定了 SQLAlchemy 將要連接的【實際資料庫】。
-# 本地開發時，使用簡單的 SQLite；生產環境則換成 PostgreSQL 連線字串。
-# --- .env ---
-# SECRET_KEY="your-super-secret-key-generated-by-openssl"
-# ALGORITHM="HS256"
-# ACCESS_TOKEN_EXPIRE_MINUTES=30
-# DATABASE_URL="sqlite:///./fakenews_detector.db"
-# ------------
+### 4. 設定環境變數
 
-# 5. 啟動後端伺服器 (預設運行在 http://127.0.0.1:8000)
-uvicorn main:app --reload
+#### 複製範本文件
+```cp .env.example .env```
 
-2. 前端設定 (React)
-# 1. 開啟新的終端，進入前端目錄
-cd ../frontend
+ 編輯 .env 文件，填入你的設定。
+ DATABASE_URL 指定了 SQLAlchemy 將要連接的【實際資料庫】。
+ 本地開發時，使用簡單的 SQLite；生產環境則換成 PostgreSQL 連線字串。
+ --- .env ---
+ SECRET_KEY="your-super-secret-key-generated-by-openssl"
+ ALGORITHM="HS256"
+ ACCESS_TOKEN_EXPIRE_MINUTES=30
+ DATABASE_URL="sqlite:///./fakenews_detector.db"
+ ------------
 
-# 2. 安裝依賴
-npm install
+### 5. 啟動後端伺服器 (預設運行在 http://127.0.0.1:8000)
+```uvicorn main:app --reload```
 
-# 3. [重要] 確認 API 端點
-# 打開 `src/App.jsx` 文件，搜尋所有 `fetch` 函數。
-# 確保 URL 指向你的後端伺服器。本地開發時應為 "http://127.0.0.1:8000"。
-# 注意：main.py 的 API 路由有 /api 前綴，請確保前端請求路徑與後端路由完全匹配。
-# 例如：/api/users/login, /api/users/register, /api/predict
+## 2. 前端設定 (React)
+   
+### 1. 開啟新的終端，進入前端目錄
+```cd ../frontend```
+
+### 2. 安裝依賴
+```npm install```
+
+### 3. __[重要]__ 確認 API 端點
+ 打開 `src/App.jsx` 文件，搜尋所有 `fetch` 函數
+ 確保 URL 指向你的後端伺服器。本地開發時應為 "http://127.0.0.1:8000"
+ 注意：main.py 的 API 路由有 /api 前綴，請確保前端請求路徑與後端路由完全匹配(predict 例外)
+ 例如：/api/users/login, /api/users/register, /predict
 
 # 4. 啟動前端開發伺服器 (預設運行在 http://localhost:5173)
 
-npm run dev
+```npm run dev```
 
-現在，您可以在瀏覽器中打開 http://localhost:5173 來使用本應用程式。
+## 現在，您可以在瀏覽器中打開 http://localhost:5173 來使用本應用程式
 
-API 端點 (後端指揮中心)
-方法	路徑	描述	認證
+__API 端點 (後端指揮中心)__
+__方法	路徑	描述	認證__
 POST	/api/users/register	註冊新使用者	無
 POST	/api/users/login	使用者登入並取得 JWT Token	無
-GET	/api/users/me	獲取當前登入使用者的資訊	需要
+GET	    /api/users/me	獲取當前登入使用者的資訊	需要
 POST	/predict	代理新聞分析請求至實驗室伺服器	需要
-GET	/	檢查 API 服務是否上線	無
+GET	   /	檢查 API 服務是否上線	無
