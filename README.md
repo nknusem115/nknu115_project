@@ -89,7 +89,6 @@ API	Pydantic, RESTful API	用於資料驗證和定義 API 結構
 ## 專案結構
 
 truth-guardian/
-
 ├── backend/
 
 │   ├── crud.py    # 資料庫增刪改查操作 (使用 SQLAlchemy)
@@ -110,6 +109,7 @@ truth-guardian/
 
 │
 └── frontend/
+
     ├── public/
     
     ├── src/
